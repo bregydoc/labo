@@ -2,6 +2,7 @@ package main
 
 import "time"
 
+// Project defines a simple project fields
 type Project struct {
 	ProjectName string
 	Age         int
