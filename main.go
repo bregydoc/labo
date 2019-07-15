@@ -27,29 +27,30 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "project-version, pv",
-			Value: "0.1",
-			Usage: "the version of your project",
+			Value: "0.0.1",
+			Usage: "version of your project",
 		},
 	}
+
 	app.Action = func(c *cli.Context) error {
 		author := c.String("author")
 		version := c.String("version")
 		projectName := c.Args().Get(0)
 		project := &Project{
-			ProjectName: projectName,
-			Age:         time.Now().Year(),
-			Author:      author,
-			CreatedAt:   time.Now(),
-			Version:     version,
+			Name:      projectName,
+			Age:       time.Now().Year(),
+			Author:    author,
+			CreatedAt: time.Now(),
+			Version:   version,
 		}
 
-		fmt.Printf("Creating project '%s' by %s\n", project.ProjectName, project.Author)
+		fmt.Printf("Creating project '%s' by %s\n", project.Name, project.Author)
 		if err := inflateProject(project); err != nil {
 			return err
 		}
 		fmt.Printf("All done!\n")
 		fmt.Printf("To go to your project, type:\n")
-		fmt.Printf("  $ cd %s\n", project.ProjectName)
+		fmt.Printf("  $ cd %s\n", project.Name)
 		return nil
 	}
 

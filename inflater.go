@@ -30,7 +30,7 @@ func createLicense(project *Project) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path.Join(project.ProjectName, "LICENSE"), buff.Bytes(), 0644)
+	err = ioutil.WriteFile(path.Join(project.Name, "LICENSE"), buff.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func createReadme(project *Project) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path.Join(project.ProjectName, "README.md"), buff.Bytes(), 0644)
+	err = ioutil.WriteFile(path.Join(project.Name, "README.md"), buff.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func createGitignore(project *Project) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path.Join(project.ProjectName, ".gitignore"), buff.Bytes(), 0644)
+	err = ioutil.WriteFile(path.Join(project.Name, ".gitignore"), buff.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -91,10 +91,10 @@ func createGitignore(project *Project) error {
 }
 
 func inflateProject(project *Project) error {
-	if project.ProjectName == "" {
+	if project.Name == "" {
 		return fmt.Errorf("invalid project name")
 	}
-	err := os.Mkdir(project.ProjectName, os.ModePerm)
+	err := os.Mkdir(project.Name, os.ModePerm)
 	if err != nil {
 		return err
 	}
