@@ -1,0 +1,5 @@
+name: agnostic
+gen:
+  - LICENSE
+  - README.md
+dirs:
