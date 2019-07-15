@@ -1,28 +1,37 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/urfave/cli"
 )
 
 func main() {
-	hostname, err := os.Hostname()
+	state, err := getLaboState()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+
+	db, err := newDatabase(state.DatabaseFile)
+	if err != nil {
+		panic(err)
+	}
+
+	labo := &Labo{
+		Version:  "0.0.2",
+		Database: db,
 	}
 
 	app := cli.NewApp()
 	app.Name = "labo"
-	app.Version = "0.1"
+	app.Version = "0.0.2"
 	app.Usage = "create a simple folder for your simple projects"
+
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "author, a",
-			Value: hostname,
+			Value: "",
 			Usage: "author of your project (probably your name)",
 		},
 		cli.StringFlag{
@@ -30,32 +39,39 @@ func main() {
 			Value: "0.0.1",
 			Usage: "version of your project",
 		},
+		cli.StringFlag{
+			Name:  "seed, s",
+			Value: "https://github.com/bregydoc/labo-agnostic",
+			Usage: "set your seed to scaffold your project",
+		},
 	}
 
-	app.Action = func(c *cli.Context) error {
-		author := c.String("author")
-		version := c.String("version")
-		projectName := c.Args().Get(0)
-		project := &Project{
-			Name:      projectName,
-			Age:       time.Now().Year(),
-			Author:    author,
-			CreatedAt: time.Now(),
-			Version:   version,
-		}
+	app.Commands = []cli.Command{
+		{
+			Name:    "new",
+			Aliases: []string{"n"},
+			Usage:   "create your new project",
+			Action: func(c *cli.Context) error {
+				name := c.Args().Get(0)
 
-		fmt.Printf("Creating project '%s' by %s\n", project.Name, project.Author)
-		if err := inflateProject(project); err != nil {
-			return err
-		}
-		fmt.Printf("All done!\n")
-		fmt.Printf("To go to your project, type:\n")
-		fmt.Printf("  $ cd %s\n", project.Name)
-		return nil
+				seedURL := c.GlobalString("seed")
+				if _, err := labo.CreateNewProject(name, seedURL); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			Name:    "list",
+			Aliases: []string{"ls"},
+			Usage:   "list all your projects",
+			Action: func(c *cli.Context) error {
+				return nil
+			},
+		},
 	}
 
-	err = app.Run(os.Args)
-	if err != nil {
+	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -9,6 +10,7 @@ import (
 	"text/template"
 
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/yaml.v2"
 )
 
 // name: agnostic
@@ -41,9 +43,13 @@ func (s *Seed) fetch() error {
 		return errors.New("invalid url")
 	}
 
-	absDir := path.Join(dir, s.Name)
+	// absDir := path.Join(dir, s.Name)
 
-	_, err = git.PlainClone(absDir, false, &git.CloneOptions{
+	chunks := strings.Split(s.url, "/")
+	repoName := chunks[len(chunks)-1]
+	repoDir := path.Join(dir, repoName)
+
+	_, err = git.PlainClone(repoDir, false, &git.CloneOptions{
 		URL:      s.url,
 		Progress: os.Stdout,
 	})
@@ -52,26 +58,50 @@ func (s *Seed) fetch() error {
 		return err
 	}
 
-	chunks := strings.Split(s.url, "/")
-	repoName := chunks[len(chunks)-1]
+	data, err := ioutil.ReadFile(path.Join(repoDir, ".labo.yml"))
+	if err != nil {
+		return err
+	}
 
-	repo := path.Join(absDir, repoName)
+	err = yaml.Unmarshal(data, s)
+	if err != nil {
+		return err
+	}
 
-	s.source = repo
+	s.source = repoDir
 	s.initialized = true
 
 	return nil
-
 }
 
-func (s *Seed) gen(project *Project) error {
+func (s *Seed) gen(where string, project *Project) error {
 	for _, g := range s.Gen {
-		file, err := os.OpenFile(path.Join(s.source, g), os.O_RDWR, 0644)
+
+		file, err := os.OpenFile(path.Join(where, g), os.O_RDONLY, 0644)
 		if err != nil {
 			return err
 		}
 
-		if err = template.New("template").Execute(file, project); err != nil {
+		data, err := ioutil.ReadAll(file)
+		if err != nil {
+			return err
+		}
+
+		if err = file.Close(); err != nil {
+			return err
+		}
+
+		file, err = os.OpenFile(path.Join(where, g), os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+
+		temp, err := template.New(g).Parse(string(data))
+		if err != nil {
+			return err
+		}
+
+		if err = temp.Execute(file, project); err != nil {
 			return err
 		}
 
@@ -83,9 +113,9 @@ func (s *Seed) gen(project *Project) error {
 	return nil
 }
 
-func (s *Seed) dirs() error {
+func (s *Seed) dirs(where string) error {
 	for _, dir := range s.Dirs {
-		if err := os.Mkdir(dir, 0466); err != nil {
+		if err := os.Mkdir(path.Join(where, dir), 0755); err != nil {
 			return err
 		}
 	}
@@ -97,10 +127,17 @@ func (s *Seed) plant(where string, project *Project) error {
 		return errors.New("seed not initialized")
 	}
 	var err error
-
-	name := strings.ToLower(s.Name)
+	name := strings.ToLower(project.Name)
 
 	destination := path.Join(where, name)
+
+	if err = os.Mkdir(destination, 0755); err != nil {
+		if os.IsExist(err) {
+			fmt.Println("Your project already exist")
+			return nil
+		}
+		return err
+	}
 
 	if err = copyDirectory(s.source, destination); err != nil {
 		return err
@@ -112,11 +149,15 @@ func (s *Seed) plant(where string, project *Project) error {
 		}
 	}
 
-	if err = s.gen(project); err != nil {
+	if err = os.RemoveAll(path.Join(destination, ".labo.yml")); err != nil {
 		return err
 	}
 
-	if err = s.dirs(); err != nil {
+	if err = s.gen(destination, project); err != nil {
+		return err
+	}
+
+	if err = s.dirs(destination); err != nil {
 		return err
 	}
 

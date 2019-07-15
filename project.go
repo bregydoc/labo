@@ -13,10 +13,11 @@ type ProjectState string
 const Active ProjectState = "active"
 const Deleted ProjectState = "deleted"
 const Archived ProjectState = "archived"
+const Pending ProjectState = "pending"
 
 // Project defines a simple project fields
 type Project struct {
-	ID        xid.ID
+	ID        xid.ID `storm:"id"`
 	Name      string
 	Icon      string
 	Age       int
@@ -44,6 +45,8 @@ func newDefault(name string) (*Project, error) {
 		Author:    hostname,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
+		Age:       time.Now().Year(),
+		State:     Pending,
 		Version:   "0.0.1",
 	}, nil
 }

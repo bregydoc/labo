@@ -1,6 +1,8 @@
 package main
 
-import "time"
+import (
+	"time"
+)
 
 // Labo is the main program thread
 type Labo struct {
@@ -20,6 +22,10 @@ func (l *Labo) newProject(name, where, seedURL string, options ...ProjectOption)
 		return nil, err
 	}
 
+	if err = l.renderCreatingProject(project); err != nil {
+		return nil, err
+	}
+
 	for _, opt := range options {
 		switch opt.Type() {
 		case "version":
@@ -35,6 +41,7 @@ func (l *Labo) newProject(name, where, seedURL string, options ...ProjectOption)
 	}
 
 	seed := newSeed(seedURL)
+
 	if err = seed.fetch(); err != nil {
 		return nil, err
 	}
@@ -61,5 +68,15 @@ func (l *Labo) CreateNewProject(name, seed string, options ...ProjectOption) (*P
 		return nil, err
 	}
 
-	return l.newProject(name, pwd, seed, options...)
+	project, err := l.newProject(name, pwd, seed, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = l.renderProjectCreated(project); err != nil {
+		return nil, err
+	}
+
+	return project, nil
+
 }

@@ -7,10 +7,28 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 )
+
+func getLaboAppDir() (string, error) {
+
+	switch runtime.GOOS {
+	case "darwin", "linux":
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		return path.Join(home, ".labo"), nil
+
+	case "windows":
+		panic("errorrrr, windows is burning")
+	}
+	return "", nil
+}
 
 func getPwd() (string, error) {
 	switch runtime.GOOS {
@@ -19,13 +37,13 @@ func getPwd() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return string(out), nil
+		return strings.Trim(string(out), " \n"), nil
 	case "windows":
 		out, err := exec.Command("echo", "%cd%").Output()
 		if err != nil {
 			return "", err
 		}
-		return string(out), nil
+		return strings.Trim(string(out), " \n"), nil
 	}
 
 	return "", errors.New("your OS is not allowed, wtf?")
